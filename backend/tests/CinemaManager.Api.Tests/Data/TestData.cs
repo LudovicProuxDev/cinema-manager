@@ -17,39 +17,43 @@ public static class TestData
         Email = email ?? $"{Guid.NewGuid():N}@test.local",
     };
 
-    /// <summary>Saves a full graph: movie, room with 2 seats, screening, user, reservation with 2 tickets.</summary>
-    public static async Task<Reservation> SeedReservationAsync(CinemaDbContext context)
+    public static Movie NewMovie() => new()
     {
-        var movie = new Movie
-        {
-            Title = "Inception",
-            Description = "A thief who steals corporate secrets through dreams.",
-            DurationMinutes = 148,
-            ReleaseDate = new DateOnly(2010, 7, 16),
-        };
+        Title = "Inception",
+        Description = "A thief who steals corporate secrets through dreams.",
+        DurationMinutes = 148,
+        ReleaseDate = new DateOnly(2010, 7, 16),
+    };
+
+    /// <summary>Saves a screening of a new movie in a new room with 2 seats (A1, A2), without reservations.</summary>
+    public static async Task<Screening> SeedScreeningAsync(CinemaDbContext context)
+    {
         var room = NewRoom();
-        var seatA1 = new Seat { Row = "A", Number = 1 };
-        var seatA2 = new Seat { Row = "A", Number = 2 };
-        room.Seats.Add(seatA1);
-        room.Seats.Add(seatA2);
+        room.Seats.Add(new Seat { Row = "A", Number = 1 });
+        room.Seats.Add(new Seat { Row = "A", Number = 2 });
 
         var screening = new Screening
         {
-            Movie = movie,
+            Movie = NewMovie(),
             Room = room,
             StartsAt = new DateTime(2026, 11, 1, 20, 30, 0, DateTimeKind.Utc),
             Price = 9.50m,
         };
-        var reservation = new Reservation
+
+        context.Screenings.Add(screening);
+        await context.SaveChangesAsync();
+        return screening;
+    }
+
+    /// <summary>Saves a full graph: a seeded screening, a user, and a reservation with a ticket for each seat.</summary>
+    public static async Task<Reservation> SeedReservationAsync(CinemaDbContext context)
+    {
+        var screening = await SeedScreeningAsync(context);
+        var reservation = new Reservation { User = NewUser(), Screening = screening };
+        foreach (var seat in screening.Room.Seats)
         {
-            User = NewUser(),
-            Screening = screening,
-            Tickets =
-            {
-                new Ticket { Seat = seatA1, Price = screening.Price },
-                new Ticket { Seat = seatA2, Price = screening.Price },
-            },
-        };
+            reservation.Tickets.Add(new Ticket { Seat = seat, Price = screening.Price });
+        }
 
         context.Reservations.Add(reservation);
         await context.SaveChangesAsync();

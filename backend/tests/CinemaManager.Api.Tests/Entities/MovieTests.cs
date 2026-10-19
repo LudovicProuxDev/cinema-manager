@@ -43,13 +43,7 @@ public class MovieTests(DatabaseFixture database)
     public async Task WithScreenings_CannotBeDeleted()
     {
         await using var seedContext = database.CreateContext();
-        var movieId = (await TestData.SeedReservationAsync(seedContext)).Screening.MovieId;
-
-        // Reservations would also block the delete (through the screening): remove them so only the screening blocks it
-        await using (var context = database.CreateContext())
-        {
-            await context.Reservations.Where(r => r.Screening.MovieId == movieId).ExecuteDeleteAsync();
-        }
+        var movieId = (await TestData.SeedScreeningAsync(seedContext)).MovieId;
 
         await TestData.AssertDeleteIsRestrictedAsync<Movie>(database, movieId);
     }
