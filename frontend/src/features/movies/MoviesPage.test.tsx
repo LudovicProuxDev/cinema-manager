@@ -116,6 +116,6 @@ describe('MoviesPage', () => {
 
     await user.click(within(await rowOf('Inception')).getByRole('button', { name: 'Supprimer' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('La suppression de « Inception » a échoué.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('La suppression a échoué.')
   })
 })

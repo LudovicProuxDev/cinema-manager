@@ -1,21 +1,15 @@
-import { useMutation } from '@tanstack/react-query'
-import { useNavigate } from 'react-router'
+import { useCreate } from '../../forms/useSave'
 import { MovieForm } from './MovieForm'
 import { emptyMovieForm } from './movieForm'
 import { moviesApi } from './moviesApi'
 
 export function NewMoviePage() {
-  const navigate = useNavigate()
-  const create = useMutation({
-    mutationFn: moviesApi.create,
-    // No cache to refresh: the list reloads the movies when it is shown again
-    onSuccess: () => navigate('/movies'),
-  })
+  const create = useCreate(moviesApi, '/movies')
 
   return (
     <>
       <h1>Nouveau film</h1>
-      <MovieForm initialValues={emptyMovieForm} onSubmit={create.mutateAsync} />
+      <MovieForm initialValues={emptyMovieForm} onSubmit={create} />
     </>
   )
 }

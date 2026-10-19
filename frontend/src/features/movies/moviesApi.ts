@@ -1,4 +1,4 @@
-import { api } from '../../api/client'
+import { createResourceApi } from '../../api/resource'
 
 /** A movie, as returned by the API. */
 export interface Movie {
@@ -13,16 +13,4 @@ export interface Movie {
 /** A movie to create or replace. */
 export type MovieRequest = Omit<Movie, 'id'>
 
-/** The keys under which TanStack Query caches the movies. */
-export const movieKeys = {
-  all: ['movies'] as const,
-  detail: (id: number) => ['movies', id] as const,
-}
-
-export const moviesApi = {
-  list: () => api.get<Movie[]>('/movies'),
-  get: (id: number) => api.get<Movie>(`/movies/${id}`),
-  create: (movie: MovieRequest) => api.post<Movie>('/movies', movie),
-  update: (id: number, movie: MovieRequest) => api.put(`/movies/${id}`, movie),
-  delete: (id: number) => api.delete(`/movies/${id}`),
-}
+export const moviesApi = createResourceApi<Movie, MovieRequest>('/movies')

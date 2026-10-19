@@ -89,9 +89,39 @@ describe('NewMoviePage', () => {
     expect(await screen.findByLabelText('Titre')).toHaveAccessibleDescription('The Title is not allowed.')
   })
 
+  it('reports the validation errors of the API that match no field', async () => {
+    serveMovies([])
+    server.use(
+      http.post('/api/movies', () =>
+        HttpResponse.json({ errors: { $: ['The JSON is invalid.'] } }, { status: 400 }),
+      ),
+    )
+    const { user } = renderApp('/movies/new')
+
+    await user.type(screen.getByLabelText('Titre'), 'Inception')
+    await user.type(screen.getByLabelText('Durée (minutes)'), '148')
+    await user.type(screen.getByLabelText('Date de sortie'), '2010-07-16')
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("L'enregistrement a échoué.")
+  })
+
   it('reports an error of the API', async () => {
     serveMovies([])
     server.use(http.post('/api/movies', () => new HttpResponse(null, { status: 500 })))
+    const { user } = renderApp('/movies/new')
+
+    await user.type(screen.getByLabelText('Titre'), 'Inception')
+    await user.type(screen.getByLabelText('Durée (minutes)'), '148')
+    await user.type(screen.getByLabelText('Date de sortie'), '2010-07-16')
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("L'enregistrement a échoué.")
+  })
+
+  it('reports a network error', async () => {
+    serveMovies([])
+    server.use(http.post('/api/movies', () => HttpResponse.error()))
     const { user } = renderApp('/movies/new')
 
     await user.type(screen.getByLabelText('Titre'), 'Inception')

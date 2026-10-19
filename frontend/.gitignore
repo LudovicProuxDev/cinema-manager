@@ -23,5 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Test coverage report
+# Test reports
 coverage
+test-results

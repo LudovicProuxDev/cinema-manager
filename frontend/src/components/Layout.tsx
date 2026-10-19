@@ -10,6 +10,12 @@ export function Layout() {
         </Link>
         <nav>
           <NavLink to="/movies">Films</NavLink>
+          <NavLink to="/rooms">Salles</NavLink>
+          <NavLink to="/seats">Sièges</NavLink>
+          <NavLink to="/screenings">Séances</NavLink>
+          <NavLink to="/users">Utilisateurs</NavLink>
+          <NavLink to="/reservations">Réservations</NavLink>
+          <NavLink to="/tickets">Billets</NavLink>
         </nav>
       </header>
       <main>

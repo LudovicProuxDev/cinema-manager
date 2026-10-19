@@ -4,3 +4,4 @@ dist
 Dockerfile
 .dockerignore
 coverage
+test-results

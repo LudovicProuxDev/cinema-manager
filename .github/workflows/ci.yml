@@ -136,6 +136,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          if-no-files-found: error
+          retention-days: 7
+
   frontend-test:
     name: Frontend tests (React)
     runs-on: ubuntu-latest
@@ -156,8 +164,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Also writes the results in JUnit XML and the coverage report in HTML
       - name: Test
-        run: npm test
+        run: npm run coverage -- --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: frontend/test-results/
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
 
   # ---------- Docker images, once both test jobs have passed ----------
   docker:

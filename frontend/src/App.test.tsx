@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { renderApp } from './test/render'
@@ -21,16 +21,25 @@ describe('App', () => {
     expect(await screen.findByText('indisponible')).toBeInTheDocument()
   })
 
-  it('navigates to the movies', async () => {
+  it.each([
+    ['Films', '/movies'],
+    ['Salles', '/rooms'],
+    ['Sièges', '/seats'],
+    ['Séances', '/screenings'],
+    ['Utilisateurs', '/users'],
+    ['Réservations', '/reservations'],
+    ['Billets', '/tickets'],
+  ])('navigates to the page "%s" (%s)', async (name) => {
     server.use(
       http.get('/api/health', () => HttpResponse.text('Healthy')),
-      http.get('/api/movies', () => HttpResponse.json([])),
+      // Every list, as a page also loads the items it refers to (e.g. the rooms of the seats)
+      http.get('/api/:resource', () => HttpResponse.json([])),
     )
     const { user } = renderApp('/')
 
-    await user.click(screen.getByRole('link', { name: 'Films' }))
+    await user.click(within(screen.getByRole('navigation')).getByRole('link', { name }))
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Films' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name })).toBeInTheDocument()
   })
 
   it('shows a page not found for an unknown URL', () => {

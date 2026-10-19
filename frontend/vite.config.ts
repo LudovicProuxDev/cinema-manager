@@ -21,8 +21,12 @@ export default defineConfig({
   // https://vitest.dev/config/
   test: {
     environment: 'jsdom',
+    // A time zone other than UTC, to check the conversions between local times and the UTC times of the API
+    env: { TZ: 'Europe/Paris' },
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
+      // A summary in the console, and a detailed report to browse in coverage/index.html
+      reporter: ['text', 'html'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/main.tsx', 'src/test/**'],
     },
