@@ -1,26 +1,24 @@
-import { useEffect, useState } from 'react'
-
-type ApiStatus = 'loading' | 'ok' | 'error'
+import { Route, Routes } from 'react-router'
+import { Layout } from './components/Layout'
+import { EditMoviePage } from './features/movies/EditMoviePage'
+import { MoviesPage } from './features/movies/MoviesPage'
+import { NewMoviePage } from './features/movies/NewMoviePage'
+import { HomePage } from './pages/HomePage'
+import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
-  const [apiStatus, setApiStatus] = useState<ApiStatus>('loading')
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((response) => setApiStatus(response.ok ? 'ok' : 'error'))
-      .catch(() => setApiStatus('error'))
-  }, [])
-
   return (
-    <main>
-      <h1>Cinema Manager</h1>
-      <p>
-        Statut de l'API :{' '}
-        {apiStatus === 'loading' && 'vérification…'}
-        {apiStatus === 'ok' && <strong className="status-ok">opérationnelle</strong>}
-        {apiStatus === 'error' && <strong className="status-error">indisponible</strong>}
-      </p>
-    </main>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<HomePage />} />
+        <Route path="movies">
+          <Route index element={<MoviesPage />} />
+          <Route path="new" element={<NewMoviePage />} />
+          <Route path=":id/edit" element={<EditMoviePage />} />
+        </Route>
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
   )
 }
 

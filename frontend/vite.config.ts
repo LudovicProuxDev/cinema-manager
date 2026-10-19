@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -15,6 +16,15 @@ export default defineConfig({
         xfwd: true,
         headers: { 'X-Forwarded-Prefix': '/api' },
       },
+    },
+  },
+  // https://vitest.dev/config/
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/main.tsx', 'src/test/**'],
     },
   },
 })

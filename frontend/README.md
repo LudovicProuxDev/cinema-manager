@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# Cinema Manager — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript, construit avec [Vite](https://vite.dev). Nécessite Node.js 22 ou plus.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Commande               | Rôle                                                   |
+| ---------------------- | ------------------------------------------------------ |
+| `npm run dev`          | Serveur de dev sur http://localhost:5173 (proxy `/api`) |
+| `npm test`             | Lance les tests une fois                               |
+| `npm run test:watch`   | Relance les tests à chaque modification                |
+| `npm run coverage`     | Tests + rapport de couverture (`coverage/`)            |
+| `npm run lint`         | Analyse du code avec [Oxlint](https://oxc.rs)          |
+| `npm run build`        | Vérification TypeScript puis build de production       |
 
-## React Compiler
+## Organisation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+src/
+├── api/              Client HTTP (fetch vers /api, erreurs ProblemDetails) et cache TanStack Query
+├── components/       Composants partagés (Layout : en-tête et navigation)
+├── features/movies/  Une fonctionnalité = ses appels API, ses pages, son formulaire et leurs tests
+├── pages/            Pages hors fonctionnalité (accueil, page introuvable)
+├── test/             Outils de test : faux serveur MSW, rendu de l'application
+├── App.tsx           Les routes
+└── main.tsx          Point d'entrée : routeur et cache
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+- **Routage** : [React Router](https://reactrouter.com) (`/movies`, `/movies/new`, `/movies/:id/edit`).
+- **Données** : [TanStack Query](https://tanstack.com/query) met en cache les lectures de l'API et
+  gère le chargement, les erreurs et les mutations.
+- **Appels à l'API** : toujours via `/api`, que le proxy de Vite (dev) ou nginx (Docker) transmet au backend.
+
+## Tests
+
+[Vitest](https://vitest.dev) avec [Testing Library](https://testing-library.com) : les tests
+utilisent l'application comme un utilisateur (libellés, rôles, clics) plutôt que ses détails internes.
+L'API est simulée par [MSW](https://mswjs.io) : chaque test déclare les réponses dont il a besoin
+avec `server.use(...)`, et toute requête non prévue fait échouer le test.

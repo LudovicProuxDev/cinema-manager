@@ -34,7 +34,10 @@ docker compose exec api dotnet test
 docker compose run --rm api dotnet ef migrations add <Nom> --project src/CinemaManager.Api --output-dir Data/Migrations
 docker compose run --rm api dotnet ef database update --project src/CinemaManager.Api
 
-# Frontend en mode dev (avec rechargement à chaud)
+# Frontend en mode dev (avec rechargement à chaud) — Node.js 22 ou plus
 docker compose up -d db api
 cd frontend && npm ci && npm run dev   # http://localhost:5173
+
+# Tests du frontend (sans API : elle est simulée par MSW)
+cd frontend && npm test               # ou npm run test:watch, npm run coverage
 ```
