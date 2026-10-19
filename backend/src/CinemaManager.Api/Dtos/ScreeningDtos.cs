@@ -3,6 +3,11 @@ using CinemaManager.Api.Entities;
 
 namespace CinemaManager.Api.Dtos;
 
+/// <summary>A screening to create or replace.</summary>
+/// <param name="StartsAt">Start time, with a time zone: "2026-11-01T20:30:00Z" or "2026-11-01T21:30:00+01:00". Returned in UTC.</param>
+/// <param name="Price">Price of a ticket, from 0 to 999999.99.</param>
+/// <param name="MovieId">Movie shown.</param>
+/// <param name="RoomId">Room of the screening.</param>
 public record ScreeningRequest(
     DateTime StartsAt,
     [Range(0, 999_999.99)] decimal Price,

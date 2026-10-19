@@ -3,7 +3,12 @@ using CinemaManager.Api.Entities;
 
 namespace CinemaManager.Api.Dtos;
 
-// Every field is required in the JSON, except Description: optional, so it has a default value (and comes last)
+/// <summary>A movie to create or replace. Every field is required, except the description.</summary>
+/// <param name="Title">Title, up to 200 characters.</param>
+/// <param name="DurationMinutes">Duration, in minutes.</param>
+/// <param name="ReleaseDate">Release date, e.g. 2010-07-16.</param>
+/// <param name="Description">Optional synopsis, up to 2000 characters.</param>
+// Description is optional, so it has a default value (and comes last)
 public record MovieRequest(
     [Required, MaxLength(200)] string Title,
     [Range(1, int.MaxValue)] int DurationMinutes,

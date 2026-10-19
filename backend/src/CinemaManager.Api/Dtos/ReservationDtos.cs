@@ -2,7 +2,9 @@ using CinemaManager.Api.Entities;
 
 namespace CinemaManager.Api.Dtos;
 
-// CreatedAt is set by the server, so it is not part of the request
+/// <summary>A reservation to create or replace. Its creation time is set by the server.</summary>
+/// <param name="UserId">User who books.</param>
+/// <param name="ScreeningId">Screening booked.</param>
 public record ReservationRequest(int UserId, int ScreeningId);
 
 public record ReservationResponse(int Id, DateTime CreatedAt, int UserId, int ScreeningId)

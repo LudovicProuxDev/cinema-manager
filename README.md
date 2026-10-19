@@ -13,11 +13,16 @@ cp .env.example .env   # puis modifier POSTGRES_PASSWORD
 docker compose up -d --build
 ```
 
-| Service  | URL                          |
-|----------|------------------------------|
-| Frontend | http://localhost:3000        |
-| API      | http://localhost:8080        |
-| Health   | http://localhost:8080/health |
+| Service                          | URL                                   |
+|----------------------------------|---------------------------------------|
+| Frontend                         | http://localhost:3000                 |
+| API                              | http://localhost:8080                 |
+| Health                           | http://localhost:8080/health          |
+| Documentation de l'API (Swagger) | http://localhost:8080/swagger         |
+| Document OpenAPI                 | http://localhost:8080/openapi/v1.json |
+
+La documentation n'est exposée qu'en environnement `Development`. Via le frontend (nginx),
+toutes les URL de l'API sont aussi disponibles sous `/api` : http://localhost:3000/api/swagger.
 
 ## Commandes utiles
 

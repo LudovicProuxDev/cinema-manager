@@ -41,8 +41,13 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<CinemaDbContext>("database");
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// OpenAPI document, built from the controllers, their attributes and XML comments: https://aka.ms/aspnet/openapi
+builder.Services.AddOpenApi(options => options.AddDocumentTransformer((document, _, _) =>
+{
+    document.Info.Title = "Cinema Manager API";
+    document.Info.Description = "Manage the movies, rooms, seats and screenings of a cinema, and book tickets.";
+    return Task.CompletedTask;
+}));
 
 var app = builder.Build();
 
@@ -52,7 +57,11 @@ app.UseExceptionHandler();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi(); // the document: /openapi/v1.json
+
+    // Swagger UI, to read and try the API: /swagger. The document URL is relative to /swagger/,
+    // so it also works behind nginx, under /api/swagger/.
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("../openapi/v1.json", "Cinema Manager API v1"));
 }
 
 // No HTTPS redirection: TLS is terminated by the reverse proxy (nginx) in front of the API.
