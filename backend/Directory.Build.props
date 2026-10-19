@@ -4,5 +4,24 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Run the code style rules (e.g. IDE0005, unnecessary using) during the build too, not only in the editor.
+         IDE0005 needs the XML documentation file; missing doc comments (CS1591) are not required. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    The container and the editor on the host share the source folder, but not the same paths
+    (/app and /cache/nuget in the container). Each one needs its own restore in bin/obj:
+    the container keeps the default folders (the dotnet-ef tool expects them), the host builds in .host/.
+    DOTNET_RUNNING_IN_CONTAINER is set by the .NET images. Folders starting with "." are already
+    ignored by the SDK's default globs; the container's bin/obj must be excluded explicitly on the host.
+  -->
+  <PropertyGroup Condition="'$(DOTNET_RUNNING_IN_CONTAINER)' != 'true'">
+    <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)/.host/obj/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildProjectDirectory)/.host/bin/</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
   </PropertyGroup>
 </Project>

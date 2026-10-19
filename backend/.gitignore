@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Build output of the host / editor (see Directory.Build.props)
+.host/
