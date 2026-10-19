@@ -48,6 +48,15 @@ public class UsersControllerTests(DatabaseFixture database)
     }
 
     [Fact]
+    public async Task Create_SameEmailWithAnotherCase_ReturnsConflict()
+    {
+        var request = await NewRequestAsync();
+        await CreateAsync(request);
+
+        await AssertCreateReturnsAsync(request with { Email = request.Email.ToUpperInvariant() }, HttpStatusCode.Conflict);
+    }
+
+    [Fact]
     public async Task Delete_WithReservations_ReturnsConflict()
     {
         var reservation = await SeedAsync(TestData.SeedReservationAsync);

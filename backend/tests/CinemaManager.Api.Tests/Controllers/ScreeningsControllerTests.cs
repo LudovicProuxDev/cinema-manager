@@ -28,8 +28,12 @@ public class ScreeningsControllerTests(DatabaseFixture database)
         return Valid with { MovieId = movie.Id, RoomId = room.Id };
     }
 
-    protected override Task<ScreeningRequest> ModifyAsync(ScreeningRequest request) =>
-        Task.FromResult(request with { StartsAt = request.StartsAt.AddDays(1), Price = 12m });
+    // Moving to another room is allowed as long as no ticket is sold
+    protected override async Task<ScreeningRequest> ModifyAsync(ScreeningRequest request)
+    {
+        var otherRoom = await SeedAsync(TestData.NewRoom());
+        return request with { StartsAt = request.StartsAt.AddDays(1), Price = 12m, RoomId = otherRoom.Id };
+    }
 
     protected override int IdOf(ScreeningResponse response) => response.Id;
 
@@ -62,6 +66,56 @@ public class ScreeningsControllerTests(DatabaseFixture database)
         var created = (await response.Content.ReadFromJsonAsync<ScreeningResponse>())!;
         Assert.Equal(new DateTime(2026, 11, 1, 20, 30, 0, DateTimeKind.Utc), created.StartsAt);
         Assert.Equal(DateTimeKind.Utc, created.StartsAt.Kind);
+    }
+
+    [Fact]
+    public async Task Create_WithoutPrice_ReturnsValidationError()
+    {
+        var request = await NewRequestAsync();
+
+        await AssertCreateWithJsonIsInvalidAsync(
+            new { startsAt = "2026-11-01T20:30:00Z", movieId = request.MovieId, roomId = request.RoomId }, "price");
+    }
+
+    [Fact]
+    public async Task Create_StartTimeWithoutTimeZone_ReturnsValidationError()
+    {
+        var request = await NewRequestAsync();
+
+        await AssertCreateWithJsonIsInvalidAsync(
+            new { startsAt = "2026-11-01T20:30:00", price = 9.50m, movieId = request.MovieId, roomId = request.RoomId },
+            nameof(ScreeningRequest.StartsAt));
+    }
+
+    [Fact]
+    public async Task Update_ChangingRoom_WithoutTickets_IsAccepted()
+    {
+        // Tickets are sold for another screening, not for this one
+        await SeedAsync(TestData.SeedReservationAsync);
+        var screening = await SeedAsync(TestData.SeedScreeningAsync);
+        var otherRoom = await SeedAsync(TestData.NewRoom());
+        var request = new ScreeningRequest(screening.StartsAt, screening.Price, screening.MovieId, otherRoom.Id);
+
+        await AssertUpdateReturnsAsync(screening.Id, request, HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Update_WithTicketsSold_InTheSameRoom_IsAccepted()
+    {
+        var screening = (await SeedAsync(TestData.SeedReservationAsync)).Screening;
+        var request = new ScreeningRequest(screening.StartsAt.AddHours(1), 12m, screening.MovieId, screening.RoomId);
+
+        await AssertUpdateReturnsAsync(screening.Id, request, HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Update_ChangingRoom_WithTicketsSold_ReturnsConflict()
+    {
+        var screening = (await SeedAsync(TestData.SeedReservationAsync)).Screening;
+        var otherRoom = await SeedAsync(TestData.NewRoom());
+        var request = new ScreeningRequest(screening.StartsAt, screening.Price, screening.MovieId, otherRoom.Id);
+
+        await AssertUpdateReturnsAsync(screening.Id, request, HttpStatusCode.Conflict);
     }
 
     [Fact]

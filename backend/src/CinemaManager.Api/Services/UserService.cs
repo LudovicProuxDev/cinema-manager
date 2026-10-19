@@ -58,6 +58,7 @@ public class UserService(CinemaDbContext db) : IUserService
     {
         user.FirstName = request.FirstName;
         user.LastName = request.LastName;
-        user.Email = request.Email;
+        // Emails are case-insensitive: store them in lower case so the unique index catches "Ada@..." vs "ada@..."
+        user.Email = request.Email.ToLowerInvariant();
     }
 }

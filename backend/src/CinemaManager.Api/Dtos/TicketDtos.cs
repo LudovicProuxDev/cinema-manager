@@ -1,12 +1,9 @@
-using System.ComponentModel.DataAnnotations;
 using CinemaManager.Api.Entities;
 
 namespace CinemaManager.Api.Dtos;
 
-public record TicketRequest(
-    [Range(0, 999_999.99)] decimal Price,
-    int ReservationId,
-    int SeatId);
+// The price is not part of the request: it comes from the screening
+public record TicketRequest(int ReservationId, int SeatId);
 
 public record TicketResponse(int Id, decimal Price, int ReservationId, int SeatId)
 {

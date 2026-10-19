@@ -1,6 +1,7 @@
 using CinemaManager.Api.Data;
 using CinemaManager.Api.Dtos;
 using CinemaManager.Api.Entities;
+using CinemaManager.Api.Errors;
 using Microsoft.EntityFrameworkCore;
 
 namespace CinemaManager.Api.Services;
@@ -22,7 +23,11 @@ public class TicketService(CinemaDbContext db) : ITicketService
     public async Task<TicketResponse> CreateAsync(TicketRequest request, CancellationToken cancellationToken)
     {
         var ticket = new Ticket();
-        Apply(request, ticket);
+        var screening = await ApplyAsync(request, ticket, cancellationToken);
+
+        // The ticket keeps the price paid, even if the screening price changes later.
+        // Unknown reservation: no price, the foreign key rejects the save anyway.
+        ticket.Price = screening?.Price ?? 0m;
         db.Tickets.Add(ticket);
         await db.SaveChangesAsync(cancellationToken);
         return TicketResponse.From(ticket);
@@ -36,7 +41,7 @@ public class TicketService(CinemaDbContext db) : ITicketService
             return false;
         }
 
-        Apply(request, ticket);
+        await ApplyAsync(request, ticket, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -54,10 +59,37 @@ public class TicketService(CinemaDbContext db) : ITicketService
         return true;
     }
 
-    private static void Apply(TicketRequest request, Ticket ticket)
+    /// <summary>Copies the request onto the ticket after checking the seat can be sold for the screening.</summary>
+    /// <returns>The screening of the reservation, or <c>null</c> when the reservation or the seat does not exist.</returns>
+    private async Task<Screening?> ApplyAsync(TicketRequest request, Ticket ticket, CancellationToken cancellationToken)
     {
-        ticket.Price = request.Price;
         ticket.ReservationId = request.ReservationId;
         ticket.SeatId = request.SeatId;
+
+        var screening = await db.Reservations
+            .Where(r => r.Id == request.ReservationId)
+            .Select(r => r.Screening)
+            .SingleOrDefaultAsync(cancellationToken);
+        var seat = await db.Seats.FindAsync([request.SeatId], cancellationToken);
+        if (screening is null || seat is null)
+        {
+            // Unknown reservation or seat: the foreign keys reject the save (400)
+            return screening;
+        }
+
+        if (seat.RoomId != screening.RoomId)
+        {
+            throw new BusinessRuleException("The seat is not in the room of the screening.");
+        }
+
+        var alreadyBooked = await db.Tickets.AnyAsync(
+            t => t.Id != ticket.Id && t.SeatId == request.SeatId && t.Reservation.ScreeningId == screening.Id,
+            cancellationToken);
+        if (alreadyBooked)
+        {
+            throw new BusinessRuleException("The seat is already booked for this screening.");
+        }
+
+        return screening;
     }
 }

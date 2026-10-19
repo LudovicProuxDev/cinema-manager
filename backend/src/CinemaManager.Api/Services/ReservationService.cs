@@ -1,6 +1,7 @@
 using CinemaManager.Api.Data;
 using CinemaManager.Api.Dtos;
 using CinemaManager.Api.Entities;
+using CinemaManager.Api.Errors;
 using Microsoft.EntityFrameworkCore;
 
 namespace CinemaManager.Api.Services;
@@ -34,6 +35,13 @@ public class ReservationService(CinemaDbContext db) : IReservationService
         if (reservation is null)
         {
             return false;
+        }
+
+        // Existing tickets must stay on a seat of the screening's room
+        if (reservation.ScreeningId != request.ScreeningId
+            && await db.Tickets.AnyAsync(t => t.ReservationId == id, cancellationToken))
+        {
+            throw new BusinessRuleException("The reservation cannot change screening: it has tickets.");
         }
 
         Apply(request, reservation);

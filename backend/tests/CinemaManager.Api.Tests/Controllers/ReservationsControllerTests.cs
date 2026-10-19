@@ -18,10 +18,12 @@ public class ReservationsControllerTests(DatabaseFixture database)
         return new ReservationRequest(user.Id, screening.Id);
     }
 
+    // Moving to another screening is allowed as long as the reservation has no ticket
     protected override async Task<ReservationRequest> ModifyAsync(ReservationRequest request)
     {
         var otherUser = await SeedAsync(TestData.NewUser());
-        return request with { UserId = otherUser.Id };
+        var otherScreening = await SeedAsync(TestData.SeedScreeningAsync);
+        return new ReservationRequest(otherUser.Id, otherScreening.Id);
     }
 
     protected override int IdOf(ReservationResponse response) => response.Id;
@@ -44,6 +46,46 @@ public class ReservationsControllerTests(DatabaseFixture database)
     [Fact]
     public async Task Create_UnknownUser_ReturnsBadRequest() =>
         await AssertCreateReturnsAsync(await NewRequestAsync() with { UserId = UnknownId }, HttpStatusCode.BadRequest);
+
+    [Fact]
+    public async Task Create_WithoutUser_ReturnsValidationError()
+    {
+        var request = await NewRequestAsync();
+
+        await AssertCreateWithJsonIsInvalidAsync(new { screeningId = request.ScreeningId }, "userId");
+    }
+
+    [Fact]
+    public async Task Update_ChangingScreening_WithoutTickets_IsAccepted()
+    {
+        // Another reservation has tickets, not this one
+        await SeedAsync(TestData.SeedReservationAsync);
+        var request = await NewRequestAsync();
+        var id = IdOf(await CreateAsync(request));
+        var otherScreening = await SeedAsync(TestData.SeedScreeningAsync);
+
+        await AssertUpdateReturnsAsync(id, request with { ScreeningId = otherScreening.Id }, HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Update_WithTickets_ForTheSameScreening_IsAccepted()
+    {
+        var reservation = await SeedAsync(TestData.SeedReservationAsync);
+        var otherUser = await SeedAsync(TestData.NewUser());
+
+        await AssertUpdateReturnsAsync(
+            reservation.Id, new ReservationRequest(otherUser.Id, reservation.ScreeningId), HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Update_ChangingScreening_WithTickets_ReturnsConflict()
+    {
+        var reservation = await SeedAsync(TestData.SeedReservationAsync);
+        var otherScreening = await SeedAsync(TestData.SeedScreeningAsync);
+
+        await AssertUpdateReturnsAsync(
+            reservation.Id, new ReservationRequest(reservation.UserId, otherScreening.Id), HttpStatusCode.Conflict);
+    }
 
     [Fact]
     public async Task Delete_WithTickets_RemovesThemToo()

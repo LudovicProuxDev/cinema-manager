@@ -130,6 +130,28 @@ public abstract class CrudControllerTests<TRequest, TResponse>(DatabaseFixture d
         Assert.Contains(field, problem!.Errors.Keys);
     }
 
+    /// <summary>
+    /// Posts raw JSON (e.g. with a missing field) and asserts it is rejected by validation,
+    /// with an error that names <paramref name="field"/>.
+    /// </summary>
+    protected async Task AssertCreateWithJsonIsInvalidAsync(object json, string field)
+    {
+        var response = await Client.PostAsJsonAsync(Route, json);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        Assert.Contains(problem!.Errors, error =>
+            error.Key.Equals(field, StringComparison.OrdinalIgnoreCase)
+            || error.Value.Any(message => message.Contains($"'{field}'", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    protected async Task AssertUpdateReturnsAsync(int id, TRequest request, HttpStatusCode expected)
+    {
+        var response = await Client.PutAsJsonAsync($"{Route}/{id}", request);
+
+        Assert.Equal(expected, response.StatusCode);
+    }
+
     protected async Task AssertDeleteReturnsAsync(int id, HttpStatusCode expected)
     {
         var response = await Client.DeleteAsync($"{Route}/{id}");
