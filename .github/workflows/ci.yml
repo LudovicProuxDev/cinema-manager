@@ -15,9 +15,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend:
-    name: Backend (.NET)
+  # ---------- Backend: build, then test the build ----------
+  backend-build:
+    name: Backend build (.NET)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: 1
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: backend/global.json
+
+      - name: Restore
+        run: dotnet restore CinemaManager.slnx
+
+      - name: Check formatting
+        run: dotnet format CinemaManager.slnx --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build CinemaManager.slnx --configuration Release --no-restore
+
+      # Outside a container, the projects build in .host/ (see Directory.Build.props)
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: |
+            backend/src/*/.host/
+            backend/tests/*/.host/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  backend-test:
+    name: Backend tests (.NET)
+    runs-on: ubuntu-latest
+    needs: backend-build
     defaults:
       run:
         working-directory: backend
@@ -49,14 +90,15 @@ jobs:
         with:
           global-json-file: backend/global.json
 
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: backend
+
+      # Fills the NuGet cache of this runner, used by the test host
       - name: Restore
         run: dotnet restore CinemaManager.slnx
-
-      - name: Check formatting
-        run: dotnet format CinemaManager.slnx --verify-no-changes --no-restore
-
-      - name: Build
-        run: dotnet build CinemaManager.slnx --configuration Release --no-restore
 
       - name: Test
         run: dotnet test CinemaManager.slnx --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
@@ -68,8 +110,9 @@ jobs:
           name: backend-test-results
           path: backend/tests/**/TestResults/*.trx
 
-  frontend:
-    name: Frontend (React)
+  # ---------- Frontend: build, then test ----------
+  frontend-build:
+    name: Frontend build (React)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -90,16 +133,37 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test
-        run: npm test
-
       - name: Build
         run: npm run build
 
+  frontend-test:
+    name: Frontend tests (React)
+    runs-on: ubuntu-latest
+    needs: frontend-build
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+  # ---------- Docker images, once both test jobs have passed ----------
   docker:
     name: Docker images
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend-test, frontend-test]
 
     steps:
       - uses: actions/checkout@v5
